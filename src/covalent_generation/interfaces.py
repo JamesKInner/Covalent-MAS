@@ -1,4 +1,4 @@
-"""Small, dependency-free contracts for replacing models and tools.
+"""Stable, dependency-free contracts for integrating models and tools.
 
 The project intentionally keeps the workflow independent of a particular
 generator or docking package. Implement ``DockingTool`` for a local tool,
@@ -37,7 +37,7 @@ class DockingRequest:
 
 @dataclass(frozen=True)
 class DockingResult:
-    """Normalized docking output used by the simple report writer."""
+    """Normalized docking output used by downstream reporting."""
 
     candidate_id: str
     status: str

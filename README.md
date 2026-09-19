@@ -1,11 +1,11 @@
-# Covalent Generation
+# Covalent-MAS
 
-一个面向开源协作的共价小分子生成与结构评估最小工作流。项目只保留
-**基础步骤、稳定的数据接口和一个 AutoDock Vina 示例**，便于研究者替换自己的
-生成模型、过滤器和分子对接工具。
+Covalent-MAS 提供了一个面向共价药物设计的模块化计算架构，覆盖靶点结构准备、
+候选分子生成、化学过滤、分子对接和结果汇总。项目通过稳定的数据接口连接不同
+计算阶段，使生成模型、筛选策略和结构评估工具能够独立开发、组合与扩展。
 
-> **定位**：这是一个可扩展的工程模板，不是完整的药物发现平台，也不提供
-> 已训练模型、靶点数据、商业软件或实验结论。
+当前版本提供 AutoDock Vina 对接实现，并定义了候选生成与对接工具的标准接口，
+可用于构建可复现的共价分子设计流程。
 
 ## 工作流
 
@@ -19,15 +19,15 @@
         └─ 5. 结果汇总：保存 score、pose、运行状态和失败原因
 ```
 
-每一步只传递小型、可序列化的数据。候选分子使用 `candidate_id`、SMILES、来源
+各阶段通过可序列化的数据对象传递结果。候选分子使用 `candidate_id`、SMILES、来源
 和可选 `metadata` 标识；工具返回统一的 `status`、`score`、`pose_path` 和
-`message`。这样可以在不改动流程代码的情况下替换模型或工具。
+`message`，从而保持模型、计算工具和工作流编排之间的清晰边界。
 
 ## 仓库结构
 
 ```text
 src/covalent_generation/
-├── interfaces.py   # Candidate、Generator、DockingTool 等最小协议
+├── interfaces.py   # Candidate、Generator、DockingTool 数据协议
 ├── pipeline.py     # CSV 输入、批量运行、JSON 输出
 ├── vina.py         # AutoDock Vina 命令行适配器
 └── cli.py          # covalent-generation 命令
@@ -36,11 +36,9 @@ examples/
 └── docking_config.json
 ```
 
-仓库刻意不包含大型数据集、模型权重、靶点结构、对接结果和内部运行环境。
-
 ## 安装
 
-项目运行时只使用 Python 标准库；建议使用 Python 3.10 或更高版本。
+建议使用 Python 3.10 或更高版本。
 
 ```bash
 git clone --branch v1.0 https://github.com/JamesKInner/Covalent-MAS.git
@@ -50,10 +48,10 @@ source .venv/bin/activate       # Windows: .venv\Scripts\activate
 python -m pip install -e .
 ```
 
-对接示例需要用户另外安装 [AutoDock Vina](https://github.com/ccsb-scripps/AutoDock-Vina)，
-并确保 `vina` 在 `PATH` 中。项目不替用户下载受许可约束的软件或模型。
+使用对接功能前，请安装 [AutoDock Vina](https://github.com/ccsb-scripps/AutoDock-Vina)，
+并确保 `vina` 命令位于 `PATH` 中。
 
-## 最小运行示例
+## 快速开始
 
 准备以下文件（示例数据不随仓库提供）：
 
@@ -89,7 +87,7 @@ covalent-generation \
 通常以 kcal/mol 报告分数；在同一受体、口袋和参数下可以用它做初步排序，不能
 直接当作结合自由能或活性预测。
 
-## 自定义生成模型和工具
+## 扩展生成模型和计算工具
 
 生成模型只需要实现 `CandidateGenerator` 协议：
 
@@ -129,9 +127,9 @@ class MyDockingTool:
 接口把工具执行和上层流程分开；建议自定义实现始终记录工具版本、参数、输入
 文件哈希和失败原因，方便复现和审计。
 
-## 每一步如何做基础评估
+## 评估框架
 
-这里提供的是工程层面的最小检查，实际研究应根据靶点、反应类型和数据集补充验证：
+建议在各阶段记录以下指标，并根据具体靶点、反应类型和数据集扩展评价方案：
 
 | 步骤 | 基础检查 | 示例输出 |
 | --- | --- | --- |
@@ -145,19 +143,18 @@ class MyDockingTool:
 单独证明共价键形成。后续可在自定义工具中增加反应原子距离/角度、共价对接、
 姿态几何检查、稳定性和实验验证，并在报告中明确这些证据的来源。
 
-## 推荐的扩展顺序
+## 架构扩展
 
-1. 替换 `CandidateGenerator`，接入已有生成模型并保留模型/seed 元数据。
-2. 增加一个轻量过滤器，输出明确的 `reject_reason`。
-3. 用项目所需的对接程序实现 `DockingTool`，保持 `DockingResult` 格式不变。
-4. 添加重复运行、参数记录和小规模基准集，再决定是否接入更复杂的结构评估。
+1. 通过 `CandidateGenerator` 接入生成模型，并记录模型版本、参数与随机种子。
+2. 增加化学过滤模块，为每个筛选决策记录明确的 `reject_reason`。
+3. 为所需的对接程序实现 `DockingTool`，保持 `DockingResult` 数据契约一致。
+4. 引入基准数据集、重复运行和参数追踪，扩展结构评估与候选排序能力。
 
-## 可复现性与边界
+## 可复现性
 
 - 输入结构准备、质子化、力场和原子类型会显著影响结果，应在项目外明确记录。
 - 对接分数适合在固定协议内比较，不应跨工具、跨口袋或跨参数直接比较。
 - 生成结果需要人工/计算复核；本项目不替代药化判断、实验验证或安全评估。
-- 示例代码不包含任何受限数据、模型权重、API 密钥或内部路径。
 
 ## 开源协议
 

@@ -1,4 +1,4 @@
-"""Simple orchestration and JSON/CSV helpers."""
+"""Workflow orchestration and JSON/CSV helpers."""
 
 from __future__ import annotations
 

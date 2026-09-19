@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "covalent-generation"
 version = "0.1.0"
-description = "A small, extensible workflow for covalent molecule generation and docking."
+description = "A modular architecture for covalent drug design, molecule generation, and docking."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
