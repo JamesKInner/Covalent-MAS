@@ -1,0 +1,3 @@
+candidate_id,smiles,source
+example_001,CCOc1ccc(NC(=O)C=C)cc1,example
+example_002,COc1ccc(NC(=O)C=C)cc1,example
