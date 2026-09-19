@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "covalent-mas"
+version = "1.0.0"
+description = "A modular architecture for iterative covalent drug design and multi-objective optimization."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Covalent-MAS contributors" }]
+dependencies = []
+
+[project.scripts]
+covalent-mas = "covalent_generation.cli:main"
+covalent-generation = "covalent_generation.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
