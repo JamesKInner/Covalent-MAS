@@ -1,4 +1,4 @@
-"""Command-line entry point for the minimal Vina workflow."""
+"""Command-line entry point for the AutoDock Vina workflow."""
 
 from __future__ import annotations
 

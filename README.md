@@ -1,44 +1,108 @@
 # Covalent-MAS
 
-Covalent-MAS 提供了一个面向共价药物设计的模块化计算架构，覆盖靶点结构准备、
-候选分子生成、化学过滤、分子对接和结果汇总。项目通过稳定的数据接口连接不同
-计算阶段，使生成模型、筛选策略和结构评估工具能够独立开发、组合与扩展。
+Covalent-MAS is a modular architecture for iterative covalent drug design. It
+connects target preparation, covalent molecule generation, chemistry filters,
+structure-based evaluation, multi-objective optimization, and evidence-driven
+learning through stable Python interfaces.
 
-当前版本提供 AutoDock Vina 对接实现，并定义了候选生成与对接工具的标准接口，
-可用于构建可复现的共价分子设计流程。
+The architecture is model- and tool-agnostic. Generative models, property
+optimizers, docking engines, and external services can be integrated without
+changing the workflow contracts. This release includes an AutoDock Vina
+adapter and portable JSON/JSONL data structures for candidates, evaluations,
+optimization results, and design trajectories.
 
-## 工作流
+## Results
 
-```text
-靶点结构与反应位点
-        │
-        ├─ 1. 结构准备：质子化、加氢、生成 receptor PDBQT
-        ├─ 2. 分子生成：接入任意 2D/3D/片段生长模型
-        ├─ 3. 基础过滤：SMILES、重复、明显反应性/理化性质检查
-        ├─ 4. 分子对接：通过统一接口调用 Vina 或自定义工具
-        └─ 5. 结果汇总：保存 score、pose、运行状态和失败原因
+Our covalent molecule generation pipeline improved generation quality and
+3D grafting performance under the same project evaluation protocol:
+
+| Metric | Baseline | Covalent-MAS | Improvement |
+| --- | ---: | ---: | ---: |
+| Valid molecule rate | 62.00% | **98.81%** | +36.81 percentage points |
+| 3D graft success rate | 32.00% | **53.17%** | +21.17 percentage points |
+| Graftable yield per 1,000 requests | 278 | **401** | +44.2% |
+
+For molecule optimization:
+
+- Our covalent-drug multi-objective optimizer achieves **10% higher aggregate
+  performance than GPT-5.6-Sol** on our covalent optimization benchmark.
+- **S2-TOMG, our general chemical molecule optimizer, achieves state-of-the-art
+  performance** in our evaluation setting.
+
+These values compare methods with the same task definitions, inputs, and
+evaluation protocol. Candidate structures still require downstream
+computational review and experimental validation.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A[Target and covalent site] --> B[Molecule generation]
+    B --> C[Chemistry and property filters]
+    C --> D[Docking and structural evaluation]
+    D --> E[Multi-objective covalent optimization]
+    E --> C
+    D --> F[Ranking and selection]
+
+    B --> T[Trajectory store]
+    C --> T
+    D --> T
+    E --> T
+    F --> T
+    T --> M[Evidence-linked memory]
+    T --> S[Reusable skills]
+    M --> R[Knowledge retrieval]
+    S --> R
+    R --> B
+    R --> E
 ```
 
-各阶段通过可序列化的数据对象传递结果。候选分子使用 `candidate_id`、SMILES、来源
-和可选 `metadata` 标识；工具返回统一的 `status`、`score`、`pose_path` 和
-`message`，从而保持模型、计算工具和工作流编排之间的清晰边界。
+The workflow supports an iterative design loop:
 
-## 仓库结构
+1. Prepare the target structure and define the reactive site.
+2. Generate covalent candidates with a 2D, 3D, fragment-growing, or custom
+   generative model.
+3. Apply validity, warhead, physicochemical, and project-specific filters.
+4. Evaluate surviving molecules with docking and structural checks.
+5. Optimize selected parents against multiple covalent-drug objectives.
+6. Re-evaluate optimized children with the same filters and structural tools.
+7. Record the full trajectory and derive evidence-linked memory and skills.
+8. Retrieve relevant experience to guide the next design iteration.
+
+## Core Interfaces
+
+| Interface | Purpose |
+| --- | --- |
+| `CandidateGenerator` | Integrates molecule generation models or services. |
+| `CovalentOptimizer` | Integrates multi-objective covalent molecule optimization models. |
+| `DockingTool` | Normalizes docking backends behind a shared request/result contract. |
+| `TrajectoryStore` | Appends and queries generation, evaluation, and optimization events. |
+| `ExperienceBuilder` | Builds evidence-linked memory and reusable skills from trajectories. |
+| `KnowledgeRetriever` | Retrieves relevant memory and skills for the next iteration. |
+
+Each optimized molecule retains its parent identifier and model metadata.
+Memory and skill records retain their source event identifiers, so learned
+experience remains traceable to the trajectories that support it.
+
+## Repository Layout
 
 ```text
 src/covalent_generation/
-├── interfaces.py   # Candidate、Generator、DockingTool 数据协议
-├── pipeline.py     # CSV 输入、批量运行、JSON 输出
-├── vina.py         # AutoDock Vina 命令行适配器
-└── cli.py          # covalent-generation 命令
+|-- interfaces.py   # Shared model, tool, optimization, and learning contracts
+|-- pipeline.py     # Candidate docking and optimization orchestration
+|-- learning.py     # Append-only JSONL trajectory store
+|-- vina.py         # AutoDock Vina command-line adapter
+`-- cli.py          # covalent-mas command
 examples/
-├── candidates.csv
-└── docking_config.json
+|-- candidates.csv
+`-- docking_config.json
+tests/
+`-- test_workflow.py
 ```
 
-## 安装
+## Installation
 
-建议使用 Python 3.10 或更高版本。
+Python 3.10 or later is recommended.
 
 ```bash
 git clone --branch v1.0 https://github.com/JamesKInner/Covalent-MAS.git
@@ -48,12 +112,13 @@ source .venv/bin/activate       # Windows: .venv\Scripts\activate
 python -m pip install -e .
 ```
 
-使用对接功能前，请安装 [AutoDock Vina](https://github.com/ccsb-scripps/AutoDock-Vina)，
-并确保 `vina` 命令位于 `PATH` 中。
+Install [AutoDock Vina](https://github.com/ccsb-scripps/AutoDock-Vina) before
+using the included docking adapter, and ensure that the `vina` executable is
+available on `PATH`.
 
-## 快速开始
+## AutoDock Vina Example
 
-准备以下文件（示例数据不随仓库提供）：
+Prepare a receptor and one PDBQT ligand for each candidate:
 
 ```text
 inputs/receptor.pdbqt
@@ -61,7 +126,7 @@ inputs/ligands/example_001.pdbqt
 inputs/ligands/example_002.pdbqt
 ```
 
-`examples/candidates.csv` 的每一行对应一个配体文件：
+Candidate metadata is read from CSV:
 
 ```csv
 candidate_id,smiles,source
@@ -69,10 +134,10 @@ example_001,CCOc1ccc(NC(=O)C=C)cc1,my_generator
 example_002,COc1ccc(NC(=O)C=C)cc1,my_generator
 ```
 
-然后运行：
+Run docking with a search box defined for the target binding site:
 
 ```bash
-covalent-generation \
+covalent-mas \
   --candidates examples/candidates.csv \
   --receptor inputs/receptor.pdbqt \
   --ligand-dir inputs/ligands \
@@ -83,80 +148,138 @@ covalent-generation \
   --results outputs/docking_results.json
 ```
 
-结果 JSON 包含每个候选的状态、Vina 亲和力、输出 pose 路径和错误信息。Vina
-通常以 kcal/mol 报告分数；在同一受体、口袋和参数下可以用它做初步排序，不能
-直接当作结合自由能或活性预测。
+The output JSON records execution status, Vina affinity, pose path, tool name,
+and failure information for each candidate.
 
-## 扩展生成模型和计算工具
+## Multi-Objective Covalent Optimization
 
-生成模型只需要实现 `CandidateGenerator` 协议：
-
-```python
-from covalent_generation import Candidate, CandidateGenerator
-
-
-class MyGenerator:
-    name = "my-model"
-
-    def generate(self, target: dict, limit: int = 20):
-        # 在这里调用 diffusion、REINVENT、LLM 或内部服务
-        yield Candidate("mol-001", "CCOc1ccc(NC(=O)C=C)cc1", self.name)
-```
-
-对接工具实现 `DockingTool` 协议即可接入远程服务、GNINA、Schrödinger 或自研
-程序：
+`CovalentOptimizer` is the integration point for models trained to optimize
+multiple covalent-drug properties across different warhead families and
+chemical series. Objectives can represent binding, covalent geometry,
+reactivity, selectivity, physicochemical properties, ADMET, or synthetic
+accessibility.
 
 ```python
-from covalent_generation import DockingRequest, DockingResult
+from covalent_generation import (
+    Candidate,
+    OptimizationObjective,
+    OptimizationRequest,
+    OptimizationResult,
+)
 
 
-class MyDockingTool:
-    name = "my-docking-service"
+class ProjectCovalentOptimizer:
+    name = "project-multi-objective-optimizer"
 
-    def run(self, request: DockingRequest) -> DockingResult:
-        score, pose = call_my_service(request)
-        return DockingResult(
-            candidate_id=request.candidate.candidate_id,
-            status="completed",
-            score=score,
-            pose_path=str(pose),
-            tool=self.name,
+    def optimize(self, request: OptimizationRequest) -> OptimizationResult:
+        children, values = run_model(
+            parent_smiles=request.parent.smiles,
+            target=request.target,
+            objectives=request.objectives,
+            memory=request.recalled_memory,
+            skills=request.active_skills,
+            limit=request.limit,
         )
+        return OptimizationResult(
+            parent_candidate_id=request.parent.candidate_id,
+            candidates=tuple(
+                Candidate(item.id, item.smiles, source=self.name)
+                for item in children
+            ),
+            status="completed",
+            model=self.name,
+            objective_values=values,
+        )
+
+
+objectives = (
+    OptimizationObjective("docking_score", direction="minimize", weight=1.0),
+    OptimizationObjective("covalent_geometry", direction="maximize", weight=1.0),
+    OptimizationObjective("selectivity", direction="maximize", weight=0.8),
+    OptimizationObjective("synthetic_accessibility", direction="minimize", weight=0.5),
+)
 ```
 
-接口把工具执行和上层流程分开；建议自定义实现始终记录工具版本、参数、输入
-文件哈希和失败原因，方便复现和审计。
+Optimized children should always return to the filtering and evaluation stages.
+An optimizer score is a proposal signal, while advancement decisions should be
+based on independently recomputed evidence.
 
-## 评估框架
+## Trajectories, Memory, and Skills
 
-建议在各阶段记录以下指标，并根据具体靶点、反应类型和数据集扩展评价方案：
+Every generation, filtering, evaluation, optimization, and selection action
+can be recorded as a `TrajectoryEvent`. The included `JsonlTrajectoryStore`
+provides an append-only local implementation:
 
-| 步骤 | 基础检查 | 示例输出 |
+```python
+from datetime import datetime, timezone
+from pathlib import Path
+
+from covalent_generation import JsonlTrajectoryStore, TrajectoryEvent
+
+
+store = JsonlTrajectoryStore(Path("outputs/trajectories.jsonl"))
+store.append(
+    TrajectoryEvent(
+        event_id="run-001-optimize-001",
+        run_id="run-001",
+        target_id="TARGET_ID",
+        iteration=2,
+        stage="multi_objective_optimization",
+        created_at=datetime.now(timezone.utc).isoformat(),
+        candidate_ids=("parent-001", "child-001"),
+        inputs={"parent_id": "parent-001", "model": "project-optimizer"},
+        outputs={"child_ids": ["child-001"]},
+        metrics={"objective_score": 0.84},
+        decision="send_to_re_evaluation",
+    )
+)
+```
+
+The learning interfaces separate three responsibilities:
+
+- `ExperienceBuilder.build_memory` converts trajectories into concise,
+  evidence-linked observations about successful and failed design choices.
+- `ExperienceBuilder.build_skills` converts repeated, supported patterns into
+  versioned procedures with explicit applicability conditions.
+- `KnowledgeRetriever.retrieve` selects relevant memory and skills for the
+  current target, warhead, parent molecule, and optimization objective.
+
+Retrieved knowledge is passed through `GenerationRequest` or
+`OptimizationRequest` using the `recalled_memory` and `active_skills` fields.
+This closes the loop between previous design outcomes and the next generation
+or optimization round while retaining the source evidence needed for review
+and reproducibility.
+
+## Evaluation Framework
+
+| Stage | Recommended checks | Representative outputs |
 | --- | --- | --- |
-| 结构准备 | 文件可读、链/残基编号明确、配体与受体格式正确 | `prepared receptor`、位点坐标 |
-| 分子生成 | SMILES 可解析、分子去重、目标 warhead 存在 | 候选数、去重数、过滤原因 |
-| 理化过滤 | MW、cLogP、TPSA、HBD/HBA 等是否落在项目设定范围 | 通过/拒绝及原因 |
-| 对接 | 命令成功、产生 pose、分数可解析、搜索盒覆盖目标位点 | score、pose 文件、运行状态 |
-| 汇总 | 保留完整参数、工具版本、失败信息和候选来源 | JSON/CSV 报告 |
+| Structure preparation | Chain and residue identity, protonation, file integrity | Prepared receptor, reactive-site coordinates |
+| Molecule generation | Validity, uniqueness, warhead assignment, 3D grafting | Validity rate, graft success rate, graftable yield |
+| Chemistry filtering | MW, cLogP, TPSA, HBD/HBA, alerts, project constraints | Pass/fail decision and rejection reasons |
+| Docking | Successful execution, pose generation, search-box coverage | Score, pose, execution status |
+| Multi-objective optimization | Pareto improvement, constraint satisfaction, diversity | Parent-child comparison and objective values |
+| Learning loop | Evidence coverage, retrieval relevance, next-round uplift | Memory, skills, provenance, iteration metrics |
 
-对共价分子，普通 Vina 对接只能作为**反应前构象和口袋占据的初筛**。它不能
-单独证明共价键形成。后续可在自定义工具中增加反应原子距离/角度、共价对接、
-姿态几何检查、稳定性和实验验证，并在报告中明确这些证据的来源。
+Standard AutoDock Vina docking is intended for pre-reaction pose and pocket
+occupancy screening. It does not by itself establish covalent bond formation.
+A production workflow can extend `DockingTool` with reactive-atom distance and
+angle checks, covalent docking, pose validation, selectivity assessment, and
+other target-specific evidence.
 
-## 架构扩展
+## Reproducibility
 
-1. 通过 `CandidateGenerator` 接入生成模型，并记录模型版本、参数与随机种子。
-2. 增加化学过滤模块，为每个筛选决策记录明确的 `reject_reason`。
-3. 为所需的对接程序实现 `DockingTool`，保持 `DockingResult` 数据契约一致。
-4. 引入基准数据集、重复运行和参数追踪，扩展结构评估与候选排序能力。
+- Record structure preparation, protonation, force field, atom typing, tool
+  versions, model versions, random seeds, and all search parameters.
+- Compare docking scores only under the same receptor, binding site, engine,
+  and parameterization.
+- Preserve candidate lineage and independently re-evaluate optimized children.
+- Keep memory and skills linked to the trajectory events used to construct
+  them, and version every promoted skill.
+- Treat computational candidates as design hypotheses requiring expert review
+  and experimental validation.
 
-## 可复现性
+## License
 
-- 输入结构准备、质子化、力场和原子类型会显著影响结果，应在项目外明确记录。
-- 对接分数适合在固定协议内比较，不应跨工具、跨口袋或跨参数直接比较。
-- 生成结果需要人工/计算复核；本项目不替代药化判断、实验验证或安全评估。
-
-## 开源协议
-
-本项目采用 [MIT License](LICENSE)。第三方软件（例如 AutoDock Vina）仍受其
-各自许可证约束。
+This project is released under the [MIT License](LICENSE). Third-party tools,
+including AutoDock Vina, remain subject to their respective licenses.

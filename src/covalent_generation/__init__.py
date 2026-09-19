@@ -1,6 +1,42 @@
-"""Minimal interfaces for a covalent molecule generation workflow."""
+"""Interfaces for an extensible covalent drug design workflow."""
 
-from .interfaces import Candidate, CandidateGenerator, DockingRequest, DockingResult, DockingTool
+from .interfaces import (
+    Candidate,
+    CandidateGenerator,
+    CovalentOptimizer,
+    DockingRequest,
+    DockingResult,
+    DockingTool,
+    ExperienceBuilder,
+    GenerationRequest,
+    KnowledgeRetriever,
+    MemoryRecord,
+    OptimizationObjective,
+    OptimizationRequest,
+    OptimizationResult,
+    SkillRecord,
+    TrajectoryEvent,
+    TrajectoryStore,
+)
+from .learning import JsonlTrajectoryStore
 
-__all__ = ["Candidate", "CandidateGenerator", "DockingRequest", "DockingResult", "DockingTool"]
-__version__ = "0.1.0"
+__all__ = [
+    "Candidate",
+    "CandidateGenerator",
+    "CovalentOptimizer",
+    "DockingRequest",
+    "DockingResult",
+    "DockingTool",
+    "ExperienceBuilder",
+    "GenerationRequest",
+    "JsonlTrajectoryStore",
+    "KnowledgeRetriever",
+    "MemoryRecord",
+    "OptimizationObjective",
+    "OptimizationRequest",
+    "OptimizationResult",
+    "SkillRecord",
+    "TrajectoryEvent",
+    "TrajectoryStore",
+]
+__version__ = "1.0.0"
