@@ -54,27 +54,9 @@ computational review and experimental validation.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    A[Target and covalent site] --> B[Molecule generation]
-    B --> C[Chemistry and property filters]
-    C --> D[Docking and structural evaluation]
-    D --> E[Multi-objective covalent optimization]
-    E --> C
-    D --> F[Ranking and selection]
-
-    B --> T[Trajectory store]
-    C --> T
-    D --> T
-    E --> T
-    F --> T
-    T --> M[Evidence-linked memory]
-    T --> S[Reusable skills]
-    M --> R[Knowledge retrieval]
-    S --> R
-    R --> B
-    R --> E
-```
+<p align="center">
+  <img src="tools/Covalent_MAS.png" alt="Covalent-MAS iterative architecture for covalent drug design" width="100%">
+</p>
 
 The workflow supports an iterative design loop:
 
