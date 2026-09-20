@@ -1,5 +1,20 @@
 # Covalent-MAS
 
+## Team
+
+Covalent-MAS is developed by a joint research team from **East China Normal
+University (ECNU)** and the **Shanghai Innovation Institute (SII)**. Our team
+brings together expertise in artificial intelligence, computational chemistry,
+molecular modeling, and drug discovery to advance covalent molecule generation,
+multi-objective optimization, structure-based evaluation, and iterative
+learning.
+
+<p align="center">
+  <img src="tools/%E5%8D%8E%E5%B8%88%E5%A4%A7logo.png" alt="East China Normal University" width="43%">
+  &nbsp;&nbsp;&nbsp;
+  <img src="tools/sii%20log.png" alt="Shanghai Innovation Institute" width="45%">
+</p>
+
 * **☀️ (News):** Covalent-MAS v1.0 is now available, featuring covalent
   molecule generation, multi-objective optimization, and evidence-driven
   trajectory learning.
@@ -287,18 +302,3 @@ other target-specific evidence.
 
 This project is released under the [MIT License](LICENSE). Third-party tools,
 including AutoDock Vina, remain subject to their respective licenses.
-
-## Team
-
-Covalent-MAS is developed by a joint research team from **East China Normal
-University (ECNU)** and the **Shanghai Innovation Institute (SII)**. Our team
-brings together expertise in artificial intelligence, computational chemistry,
-molecular modeling, and drug discovery to advance covalent molecule generation,
-multi-objective optimization, structure-based evaluation, and iterative
-learning.
-
-<p align="center">
-  <img src="tools/%E5%8D%8E%E5%B8%88%E5%A4%A7logo.png" alt="East China Normal University" width="43%">
-  &nbsp;&nbsp;&nbsp;
-  <img src="tools/sii%20log.png" alt="Shanghai Innovation Institute" width="45%">
-</p>
