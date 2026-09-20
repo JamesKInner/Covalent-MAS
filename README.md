@@ -117,6 +117,7 @@ Install [AutoDock Vina](https://github.com/ccsb-scripps/AutoDock-Vina) before
 using the included docking adapter, and ensure that the `vina` executable is
 available on `PATH`.
 
+
 ## AutoDock Vina Example
 
 Prepare a receptor and one PDBQT ligand for each candidate:
